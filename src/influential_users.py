@@ -1,7 +1,7 @@
 import networkx as nx
 
 
-def content_generators(graph: nx.DiGraph, k: int) -> list[int]:
+def content_generators(graph: nx.DiGraph, k: int) -> list:
     """
     Identify k content generators in graph
 
@@ -14,7 +14,8 @@ def content_generators(graph: nx.DiGraph, k: int) -> list[int]:
     return list(dict(content_generators_list).keys())
 
 
-def content_spreaders(graph: nx.DiGraph, k: int) -> list[int]:
+def content_spreaders(graph: nx.DiGraph, k: int) -> list:
+    # TODO
     """
     Identify k content spreaders in graph
 
