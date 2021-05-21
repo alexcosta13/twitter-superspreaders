@@ -37,3 +37,26 @@ def save_networkx_directed_graph(graph: nx.DiGraph, path: str, weighted=False):
     :return:
     """
     pass
+
+
+def save_list(list_: list, file_path: str) -> None:
+    """
+
+    :param list_:
+    :param file_path:
+    :return:
+    """
+    list_to_string = ' '.join(map(str, list_))
+    with open(file_path, 'w') as f:
+        f.write(list_to_string)
+
+
+def load_list(file_path: str) -> list:
+    """
+
+    :param file_path:
+    :return:
+    """
+    with open(file_path, 'r') as f:
+        line = f.read()
+    return list(map(int, line.split()))
