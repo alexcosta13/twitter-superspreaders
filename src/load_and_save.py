@@ -36,4 +36,39 @@ def save_networkx_directed_graph(graph: nx.DiGraph, path: str, weighted=False):
     :param weighted: indicates whether the graph is weighted
     :return:
     """
-    pass
+    edge_list = []
+
+    if weighted:
+        for src, dst, value in graph.edges.data():
+            temp = f"{src} {dst} {value['weight']}\n"
+            edge_list.append(temp)
+    else:
+        for src, dst, value in graph.edges():
+            temp = f"{src} {dst}\n"
+            edge_list.append(temp)
+
+    with open(path, "w") as file_:
+        file_.writelines(edge_list)
+
+
+def save_list(list_: list, file_path: str) -> None:
+    """
+
+    :param list_:
+    :param file_path:
+    :return:
+    """
+    list_to_string = ' '.join(map(str, list_))
+    with open(file_path, 'w') as f:
+        f.write(list_to_string)
+
+
+def load_list(file_path: str) -> list:
+    """
+
+    :param file_path:
+    :return:
+    """
+    with open(file_path, 'r') as f:
+        line = f.read()
+    return list(map(int, line.split()))

@@ -13,7 +13,11 @@ def build_spreading_graph(followers: nx.DiGraph, retweets: nx.DiGraph) -> nx.DiG
     """
     paths = get_shortest_paths_from_data(followers, retweets)
     edges = get_edges_from_paths(paths)
-    # TODO normalize the edges and actually build the graph
+    # TODO normalize the edges
+    spreading = nx.DiGraph()
+    spreading.add_edges_from(edges)
+    # TODO do we need to reverse it?
+    return spreading
 
 
 def create_reduced_dataset(path: str, size: int, save: str = None):
@@ -34,7 +38,7 @@ def create_reduced_dataset(path: str, size: int, save: str = None):
     retweet_activity_reduced = retweet_activity_reduced.head(size)
 
     if save is not None:
-        retweet_activity_reduced.to_csv(save, sep=" ", header=False)
+        retweet_activity_reduced.to_csv(save, sep=" ", header=False, index=False)
 
     return retweet_activity_reduced
 
