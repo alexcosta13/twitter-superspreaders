@@ -13,7 +13,11 @@ def build_spreading_graph(followers: nx.DiGraph, retweets: nx.DiGraph) -> nx.DiG
     """
     paths = get_shortest_paths_from_data(followers, retweets)
     edges = get_edges_from_paths(paths)
-    # TODO normalize the edges and actually build the graph
+    # TODO normalize the edges
+    spreading = nx.DiGraph()
+    spreading.add_edges_from(edges)
+    # TODO do we need to reverse it?
+    return spreading
 
 
 def create_reduced_dataset(path: str, size: int, save: str = None):
@@ -26,15 +30,15 @@ def create_reduced_dataset(path: str, size: int, save: str = None):
     """
     all_activity = pd.read_csv(path, delimiter=" ", names=["SRC", "DST", "TIME", "TYPE"])
     retweet_activity = all_activity[all_activity["TYPE"] == "RT"]
-    retweet_activity.drop(columns=["TYPE"], inplace=True)
-    retweet_activity.sort_values(by=["TIME"])
-    retweet_activity_reduced = retweet_activity.drop(columns=["TIME"])
-    # retweet_activity_reduced['COUNT'] = np.zeros(len(retweet_activity_reduced))
-    # retweet_activity_reduced = retweet_activity_reduced.groupby(["SRC", "DST"]).count()
-    retweet_activity_reduced = retweet_activity_reduced.head(size)
+    retweet_activity = retweet_activity.drop(columns=["TYPE"])
+    retweet_activity = retweet_activity.sort_values(by=["TIME"])
+    retweet_activity = retweet_activity.drop(columns=["TIME"])
+    retweet_activity["WEIGHT"] = 1
+    # TODO groupby?
+    retweet_activity_reduced = retweet_activity.head(size)
 
     if save is not None:
-        retweet_activity_reduced.to_csv(save, sep=" ", header=False)
+        retweet_activity_reduced.to_csv(save, sep=" ", header=False, index=False)
 
     return retweet_activity_reduced
 
