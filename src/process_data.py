@@ -24,13 +24,13 @@ def create_reduced_dataset(path: str, size: int, save: str = None):
     :param save: path to save the created graph, if not None
     :return: list of unique nodes
     """
-    all_activity = pd.read_csv(path, delimiter=" ", names=["SRC", "DST", "TIME", "TYPE"])
+    all_activity = pd.read_csv('Data/higgs-activity_time.txt', delimiter = " ", names=["SRC", "DST", "TIME", "TYPE"])
     retweet_activity = all_activity[all_activity["TYPE"] == "RT"]
     retweet_activity.drop(columns=["TYPE"], inplace=True)
     retweet_activity.sort_values(by=["TIME"])
     retweet_activity_reduced = retweet_activity.drop(columns=["TIME"])
-    # retweet_activity_reduced['COUNT'] = np.zeros(len(retweet_activity_reduced))
-    # retweet_activity_reduced = retweet_activity_reduced.groupby(["SRC", "DST"]).count()
+    retweet_activity_reduced['COUNT'] = np.zeros(len(retweet_activity_reduced))
+    retweet_activity_reduced = retweet_activity_reduced.groupby(["SRC", "DST"]).count()
     retweet_activity_reduced = retweet_activity_reduced.head(size)
 
     if save is not None:
