@@ -1,6 +1,9 @@
 import networkx as nx
 import numpy as np
 import pandas as pd
+import snap
+
+from . import load_and_save
 
 
 def build_spreading_graph(followers: nx.DiGraph, retweets: nx.DiGraph) -> nx.DiGraph:
@@ -27,10 +30,10 @@ def create_retweet_reduced_dataset(path: str, size: int, save: str = None):
     :param save: path to save the created graph, if not None
     :return: list of unique nodes
     """
-    all_activity = pd.read_csv('Data/higgs-activity_time.txt', delimiter = " ", names=["SRC", "DST", "TIME", "TYPE"])
+    all_activity = pd.read_csv(path, delimiter=" ", names=["SRC", "DST", "TIME", "TYPE"])
     retweet_activity = all_activity[all_activity["TYPE"] == "RT"]
-    retweet_activity.drop(columns=["TYPE"], inplace=True)
-    retweet_activity.sort_values(by=["TIME"])
+    retweet_activity = retweet_activity.drop(columns=["TYPE"])
+    retweet_activity = retweet_activity.sort_values(by=["TIME"])
     retweet_activity_reduced = retweet_activity.drop(columns=["TIME"])
     retweet_activity_reduced['COUNT'] = np.zeros(len(retweet_activity_reduced))
     retweet_activity_reduced = retweet_activity_reduced.groupby(["SRC", "DST"]).count()
@@ -41,6 +44,7 @@ def create_retweet_reduced_dataset(path: str, size: int, save: str = None):
 
     return retweet_activity_reduced
 
+
 def create_followers_reduced_dataset(followers_path, retweets_path, save: str = None):
     """
     Creates a subgraph ...
@@ -49,6 +53,16 @@ def create_followers_reduced_dataset(followers_path, retweets_path, save: str = 
     :param save: path to save the created graph, if not None
     :return: 
     """
+    followers = snap.LoadEdgeList(snap.TNGraph, followers_path, 0, 1)
+    retweets_path = snap.LoadEdgeList(snap.TNGraph, retweets_path, 0, 1)
+    nodes = list(get_nodes_list_snap_graph(retweets_path))
+    subgraph = followers.GetSubGraph(nodes)
+
+    if save is not None:
+        load_and_save.save_snap_directed_graph(subgraph, save)
+
+    return subgraph
+
 
 def get_unique_nodes_from_dataframe(df: pd.DataFrame) -> list:
     """
@@ -57,6 +71,7 @@ def get_unique_nodes_from_dataframe(df: pd.DataFrame) -> list:
     :return: list[int] corresponding to the nodes
     """
     return list(set(df["SRC"].to_list() + df["DST"].to_list()))
+
 
 def get_shortest_paths_from_data(followers: nx.DiGraph, retweets: nx.DiGraph):
     """
@@ -71,6 +86,7 @@ def get_shortest_paths_from_data(followers: nx.DiGraph, retweets: nx.DiGraph):
             yield path, w['weight']
         except:
             pass
+
 
 def get_edges_from_paths(paths):
     """
@@ -87,6 +103,7 @@ def get_edges_from_paths(paths):
                 edges[(path[i], path[i + 1])] = w
     
     return edges
+
 
 def get_edges_with_normalized_weights(edges):
     """
@@ -113,6 +130,7 @@ def get_edges_with_normalized_weights(edges):
     
     return output_edges
 
+
 def normalize_data(data):
     """
 
@@ -120,3 +138,8 @@ def normalize_data(data):
     :return:
     """
     return (data - np.min(data)) / (np.max(data) - np.min(data))
+
+
+def get_nodes_list_snap_graph(graph: snap.TNGraph) -> list:
+    for node in graph.Nodes():
+        yield node.GetId()

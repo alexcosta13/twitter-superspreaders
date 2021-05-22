@@ -52,6 +52,24 @@ def save_networkx_directed_graph(graph: nx.DiGraph, path: str, weighted=False):
         file_.writelines(edge_list)
 
 
+def save_snap_directed_graph(graph: snap.TNGraph, path: str):
+    """
+    Saves a directed graph from a path
+
+    :param graph: location of the graph file
+    :param path: location of the graph file
+    :param weighted: indicates whether the graph is weighted
+    :return:
+    """
+    edge_list = []
+
+    for edge in graph.Edges():
+        edge_list.append(f"{edge.GetSrcNId()} {edge.GetDstNId()}\n")
+
+    with open(path, "w") as file_:
+        file_.writelines(edge_list)
+
+
 def save_list(list_: list, file_path: str) -> None:
     """
 
