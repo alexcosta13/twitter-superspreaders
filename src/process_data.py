@@ -13,14 +13,13 @@ def build_spreading_graph(followers: nx.DiGraph, retweets: nx.DiGraph) -> nx.DiG
     """
     paths = get_shortest_paths_from_data(followers, retweets)
     edges = get_edges_from_paths(paths)
-    # TODO normalize the edges
+    edges = get_edges_with_normalized_weights(edges)
     spreading = nx.DiGraph()
     spreading.add_edges_from(edges)
-    # TODO do we need to reverse it?
     return spreading
 
 
-def create_reduced_dataset(path: str, size: int, save: str = None):
+def create_retweet_reduced_dataset(path: str, size: int, save: str = None):
     """
     Creates a subgraph of size number of edges and returns its nodes
     :param path: location of the graph file
@@ -38,10 +37,18 @@ def create_reduced_dataset(path: str, size: int, save: str = None):
     retweet_activity_reduced = retweet_activity_reduced.head(size)
 
     if save is not None:
-        retweet_activity_reduced.to_csv(save, sep=" ", header=False, index=False)
+        retweet_activity_reduced.to_csv(save, sep=" ", header=False)
 
     return retweet_activity_reduced
 
+def create_followers_reduced_dataset(followers_path, retweets_path, save: str = None):
+    """
+    Creates a subgraph ...
+    :param followers_path: 
+    :param retweets_path: 
+    :param save: path to save the created graph, if not None
+    :return: 
+    """
 
 def get_unique_nodes_from_dataframe(df: pd.DataFrame) -> list:
     """
@@ -50,7 +57,6 @@ def get_unique_nodes_from_dataframe(df: pd.DataFrame) -> list:
     :return: list[int] corresponding to the nodes
     """
     return list(set(df["SRC"].to_list() + df["DST"].to_list()))
-
 
 def get_shortest_paths_from_data(followers: nx.DiGraph, retweets: nx.DiGraph):
     """
@@ -66,7 +72,6 @@ def get_shortest_paths_from_data(followers: nx.DiGraph, retweets: nx.DiGraph):
         except:
             pass
 
-
 def get_edges_from_paths(paths):
     """
 
@@ -80,7 +85,38 @@ def get_edges_from_paths(paths):
                 edges[(path[i], path[i + 1])] += w
             else:
                 edges[(path[i], path[i + 1])] = w
+    
+    return edges
 
-    for key, value in edges.items():
-        temp = (*key, {'weights': value})
-        yield temp
+def get_edges_with_normalized_weights(edges):
+    """
+
+    :param edges:
+    :return:
+    """
+    weights = {}
+
+    for (src, dst), value in edges.items():
+        weights[(src, dst)] = value
+
+    weights_normalized = normalize_data(list(weights.values()))
+
+    # Update of the weight. Set a minimum normalized weight of 0.1
+    for i, ((src, dst), value) in enumerate(edges.items()):
+        weights[(src, dst)] = weights_normalized[i] if weights_normalized[i] > 0.1 else 0.1
+
+    output_edges = []
+
+    for (src, dst), value in edges.items():
+        temp = (src, dst, {"weight": weights[(src, dst)]})
+        output_edges.append(temp)
+    
+    return output_edges
+
+def normalize_data(data):
+    """
+
+    :param data:
+    :return:
+    """
+    return (data - np.min(data)) / (np.max(data) - np.min(data))

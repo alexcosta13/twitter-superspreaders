@@ -1,5 +1,6 @@
 import networkx as nx
 import snap
+import pandas as pd
 
 
 def load_networkx_directed_graph(path: str, weighted=False) -> nx.DiGraph:
