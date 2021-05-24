@@ -1,5 +1,6 @@
 import networkx as nx
 import snap
+import pandas as pd
 
 
 def load_networkx_directed_graph(path: str, weighted=False) -> nx.DiGraph:
@@ -13,7 +14,7 @@ def load_networkx_directed_graph(path: str, weighted=False) -> nx.DiGraph:
     if not weighted:
         graph = nx.read_edgelist(path=path, nodetype=int, create_using=nx.DiGraph())
     else:
-        graph = nx.read_edgelist(path=path, nodetype=int, data=(('weight', int),), create_using=nx.DiGraph())
+        graph = nx.read_edgelist(path=path, nodetype=int, data=(('weight', float),), create_using=nx.DiGraph())
     return graph
 
 
@@ -36,7 +37,37 @@ def save_networkx_directed_graph(graph: nx.DiGraph, path: str, weighted=False):
     :param weighted: indicates whether the graph is weighted
     :return:
     """
-    pass
+    edge_list = []
+
+    if weighted:
+        for src, dst, value in graph.edges.data():
+            temp = f"{src} {dst} {value['weight']}\n"
+            edge_list.append(temp)
+    else:
+        for src, dst, value in graph.edges():
+            temp = f"{src} {dst}\n"
+            edge_list.append(temp)
+
+    with open(path, "w") as file_:
+        file_.writelines(edge_list)
+
+
+def save_snap_directed_graph(graph: snap.TNGraph, path: str):
+    """
+    Saves a directed graph from a path
+
+    :param graph: location of the graph file
+    :param path: location of the graph file
+    :param weighted: indicates whether the graph is weighted
+    :return:
+    """
+    edge_list = []
+
+    for edge in graph.Edges():
+        edge_list.append(f"{edge.GetSrcNId()} {edge.GetDstNId()}\n")
+
+    with open(path, "w") as file_:
+        file_.writelines(edge_list)
 
 
 def save_list(list_: list, file_path: str) -> None:

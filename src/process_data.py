@@ -1,6 +1,9 @@
 import networkx as nx
 import numpy as np
 import pandas as pd
+import snap
+
+from . import load_and_save
 
 
 def build_spreading_graph(followers: nx.DiGraph, retweets: nx.DiGraph) -> nx.DiGraph:
@@ -13,10 +16,13 @@ def build_spreading_graph(followers: nx.DiGraph, retweets: nx.DiGraph) -> nx.DiG
     """
     paths = get_shortest_paths_from_data(followers, retweets)
     edges = get_edges_from_paths(paths)
-    # TODO normalize the edges and actually build the graph
+    edges = get_edges_with_normalized_weights(edges)
+    spreading = nx.DiGraph()
+    spreading.add_edges_from(edges)
+    return spreading
 
 
-def create_reduced_dataset(path: str, size: int, save: str = None):
+def create_retweet_reduced_dataset(path: str, size: int, save: str = None):
     """
     Creates a subgraph of size number of edges and returns its nodes
     :param path: location of the graph file
@@ -26,17 +32,36 @@ def create_reduced_dataset(path: str, size: int, save: str = None):
     """
     all_activity = pd.read_csv(path, delimiter=" ", names=["SRC", "DST", "TIME", "TYPE"])
     retweet_activity = all_activity[all_activity["TYPE"] == "RT"]
-    retweet_activity.drop(columns=["TYPE"], inplace=True)
-    retweet_activity.sort_values(by=["TIME"])
+    retweet_activity = retweet_activity.drop(columns=["TYPE"])
+    retweet_activity = retweet_activity.sort_values(by=["TIME"])
     retweet_activity_reduced = retweet_activity.drop(columns=["TIME"])
-    # retweet_activity_reduced['COUNT'] = np.zeros(len(retweet_activity_reduced))
-    # retweet_activity_reduced = retweet_activity_reduced.groupby(["SRC", "DST"]).count()
+    retweet_activity_reduced['COUNT'] = np.zeros(len(retweet_activity_reduced))
+    retweet_activity_reduced = retweet_activity_reduced.groupby(["SRC", "DST"]).count()
     retweet_activity_reduced = retweet_activity_reduced.head(size)
 
     if save is not None:
         retweet_activity_reduced.to_csv(save, sep=" ", header=False)
 
     return retweet_activity_reduced
+
+
+def create_followers_reduced_dataset(followers_path, retweets_path, save: str = None):
+    """
+    Creates a subgraph ...
+    :param followers_path: 
+    :param retweets_path: 
+    :param save: path to save the created graph, if not None
+    :return: 
+    """
+    followers = snap.LoadEdgeList(snap.TNGraph, followers_path, 0, 1)
+    retweets_path = snap.LoadEdgeList(snap.TNGraph, retweets_path, 0, 1)
+    nodes = list(get_nodes_list_snap_graph(retweets_path))
+    subgraph = followers.GetSubGraph(nodes)
+
+    if save is not None:
+        load_and_save.save_snap_directed_graph(subgraph, save)
+
+    return subgraph
 
 
 def get_unique_nodes_from_dataframe(df: pd.DataFrame) -> list:
@@ -76,7 +101,45 @@ def get_edges_from_paths(paths):
                 edges[(path[i], path[i + 1])] += w
             else:
                 edges[(path[i], path[i + 1])] = w
+    
+    return edges
 
-    for key, value in edges.items():
-        temp = (*key, {'weights': value})
-        yield temp
+
+def get_edges_with_normalized_weights(edges):
+    """
+
+    :param edges:
+    :return:
+    """
+    weights = {}
+
+    for (src, dst), value in edges.items():
+        weights[(src, dst)] = value
+
+    weights_normalized = normalize_data(list(weights.values()))
+
+    # Update of the weight. Set a minimum normalized weight of 0.1
+    for i, ((src, dst), value) in enumerate(edges.items()):
+        weights[(src, dst)] = weights_normalized[i] if weights_normalized[i] > 0.1 else 0.1
+
+    output_edges = []
+
+    for (src, dst), value in edges.items():
+        temp = (src, dst, {"weight": weights[(src, dst)]})
+        output_edges.append(temp)
+    
+    return output_edges
+
+
+def normalize_data(data):
+    """
+
+    :param data:
+    :return:
+    """
+    return (data - np.min(data)) / (np.max(data) - np.min(data))
+
+
+def get_nodes_list_snap_graph(graph: snap.TNGraph) -> list:
+    for node in graph.Nodes():
+        yield node.GetId()
